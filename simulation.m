@@ -25,7 +25,7 @@ environment.atm_scale_height = 8500;
 %% Simulation Parameters
 simparams.pitchover_start = 5e3;
 simparams.pitchover_end = 30e3;
-simparams.pitchover_mag = -15;
+simparams.pitchover_mag = -15.5;
 simparams.target_altitude = 2000 * 1000;
 
 %% Simulation stages
@@ -41,7 +41,7 @@ if S1(end, 2) <= 0
     t = t1;
     S = S1;
 else
-    %% Second Stage Simulation
+%% Second Stage Simulation
     % Same state as end of first stage, remove booster mass
     S0_2 = [S1(end, 1); S1(end, 2); S1(end, 3); S1(end, 4); stage2.wet_mass];
     time_span_2 = [t1(end) 10000];
@@ -49,6 +49,7 @@ else
     [t2, S2] = ode45(@(t, S) rocketODE(t, S, stage2, environment, simparams), time_span_2, S0_2, options2);
     disp("Stage 2 completed at t = " + t2(end) + " seconds.");
 
+    % Combine simulation data matrices
     t = [t1; t2(2:end, :)];
     S = [S1; S2(2:end, :)];
 end
@@ -61,7 +62,7 @@ v = S(:, 4);
 m = S(:, 5);
 
 % Others
-e = v.^2 ./ 2 - (environment.gravitational_constant * environment.earth_mass) ./ (environment.earth_radius + h);
+e = v.^2 ./ 2 - (environment.gravitational_constant * environment.earth_mass) ./ (environment.earth_radius + h); % Specific energy for tuning pitchover parameters
 dt = [0; diff(t)];
 
 % Rocket position to cartesian coordiantes
@@ -73,7 +74,7 @@ angle = linspace(0, 2 * pi, 500);
 earth_x = environment.earth_radius * cos(angle);
 earth_y = environment.earth_radius * sin(angle);
 
-% Pitchover + main engine cutoff indices
+% Find pitchover + main engine cutoff indices
 index_tolerance = 100;
 index_param = h;
 pitchover_start_index = find(abs(index_param - simparams.pitchover_start) <= index_tolerance, 1, "first"); % Find pitchover start index
@@ -103,12 +104,10 @@ statistics_box = text(0, 0, "", FontSize = 10, FontName = "FixedWidth", Backgrou
 title(sim_tile, "Live Simulation");
 
 % Side plots
-plot_titles = ["Downrange (m)", "Altitude (m)", "Flight Path Angle (deg)", "Velocity (m/s)", "Mass (kg)", "Time Step (s)"];
-data = [s, h, gamma, v, m, dt];
+plot_titles = ["Downrange (m)", "Altitude (m)", "Flight Path Angle (deg)", "Velocity (m/s)", "Mass (kg)", "Time Step (s)"]; % Plot names
+data = [s, h, gamma, v, m, dt]; % Which data each plot uses
 plots = gobjects(6, 1);
 tiles = gobjects(6, 1);
-
-target_velocity = sqrt((environment.gravitational_constant * environment.earth_mass) / (environment.earth_radius + simparams.target_altitude));
 
 for i = 1:length(plot_titles)
 
@@ -129,19 +128,23 @@ for i = 1:length(plot_titles)
         xline(tiles(i), t(meco_index), "y--");
     end
 
+    % Mark target altitude and velocity
     if i == 2
         yline(tiles(i), simparams.target_altitude);
     end
     if i == 4
+        target_velocity = sqrt((environment.gravitational_constant * environment.earth_mass) / (environment.earth_radius + simparams.target_altitude));
         yline(tiles(i), target_velocity);
     end
 
 end
 
+% Link the time axis for side plots
 linkaxes(tiles, "X");
 
 %% Live Simulation
 
+% Set to true to disable live simulation and skip to full plots, set to false for life simulation
 if true
     return;
 end
