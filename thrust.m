@@ -11,11 +11,13 @@ target_velocity = sqrt((environment.gravitational_constant * environment.earth_m
 target_angle = 0;
 target_height = simparams.target_altitude;
 
+% Disable thrust during ideal orbital conditions
 goldilocks = abs(v - target_velocity) <= 10 && abs(gamma - target_angle) <= 0.01 && abs(h - target_height) <= 500;
-% goldilocks = v > target_velocity;
+% goldilocks = abs(v - target_velocity) <= 10 || v >= target_velocity;
 
 if goldilocks || m <= rocket.dry_mass
     thrust = 0;
 else
+    % Thrust interpolation
     thrust = rocket.thrust_vac - (density ./ environment.atm_density_sea) .* (rocket.thrust_vac - rocket.thrust_sea);
 end

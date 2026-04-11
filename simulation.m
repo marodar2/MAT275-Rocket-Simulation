@@ -23,10 +23,10 @@ environment.atm_density_sea = 1.225;
 environment.atm_scale_height = 8500;
 
 %% Simulation Parameters
-simparams.pitchover_start = 5e3;
-simparams.pitchover_end = 30e3;
-simparams.pitchover_mag = -15.5;
-simparams.target_altitude = 2000 * 1000;
+simparams.pitchover_start = 100e3;
+simparams.pitchover_end = 1000e3;
+simparams.pitchover_mag = -50;
+simparams.target_altitude = 2000e3;
 
 %% Simulation stages
 % First Stage
@@ -38,6 +38,7 @@ disp("Stage 1 completed at t = " + t1(end) + " seconds.");
 
 % Handle failed first stage, second stage if else
 if S1(end, 2) <= 0
+    disp("Stage 1 Failed");
     t = t1;
     S = S1;
 else
@@ -74,6 +75,15 @@ angle = linspace(0, 2 * pi, 500);
 earth_x = environment.earth_radius * cos(angle);
 earth_y = environment.earth_radius * sin(angle);
 
+target_x = (environment.earth_radius + simparams.target_altitude) * cos(angle);
+target_y = (environment.earth_radius + simparams.target_altitude) * sin(angle);
+
+pitchover_start_x = (environment.earth_radius + simparams.pitchover_start) * cos(angle);
+pitchover_start_y = (environment.earth_radius + simparams.pitchover_start) * sin(angle);
+
+pitchover_end_x = (environment.earth_radius + simparams.pitchover_end) * cos(angle);
+pitchover_end_y = (environment.earth_radius + simparams.pitchover_end) * sin(angle);
+
 % Find pitchover + main engine cutoff indices
 index_tolerance = 100;
 index_param = h;
@@ -93,6 +103,10 @@ hold(sim_tile, "on");
 axis(sim_tile, "equal");
 grid(sim_tile, "on");
 plot(earth_x, earth_y, "g"); % Plot earth circle
+plot(target_x, target_y, "white"); % Plot target circle
+
+plot(pitchover_start_x, pitchover_start_y, "white"); % Plot target circle
+plot(pitchover_end_x, pitchover_end_y, "y--"); % Plot target circle
 
 plot(x(1:pitchover_start_index), y(1:pitchover_start_index), "b--"); % Plot rocket's trail pre-pitchover
 plot(x(pitchover_start_index:pitchover_end_index), y(pitchover_start_index:pitchover_end_index), "r--"); % Plot rocket's trail during pitchover
@@ -145,9 +159,9 @@ linkaxes(tiles, "X");
 %% Live Simulation
 
 % Set to true to disable live simulation and skip to full plots, set to false for life simulation
-if true
-    return;
-end
+% if true
+%     return;
+% end
 
 drawnow;
 playback_speed = 100;
